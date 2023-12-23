@@ -1,5 +1,6 @@
 use anyhow::Result;
 use log::{info, trace};
+
 use crate::database;
 use crate::HTTP_PORT;
 

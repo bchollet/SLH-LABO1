@@ -1,14 +1,16 @@
+use std::net::SocketAddr;
+
+use handlebars::Handlebars;
+use log::info;
+use once_cell::sync::Lazy;
+
+use crate::consts::HTTP_PORT;
+
 mod backend;
 mod database;
 mod utils;
 mod email;
 mod consts;
-
-use std::net::SocketAddr;
-use handlebars::Handlebars;
-use log::info;
-use once_cell::sync::Lazy;
-use crate::consts::HTTP_PORT;
 
 static HBS: Lazy<Handlebars> = Lazy::new(|| {
     info!("Init handlebar");

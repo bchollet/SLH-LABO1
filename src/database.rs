@@ -1,17 +1,19 @@
 use std::fs::File;
+use std::ops::Deref;
 use std::sync::{RwLock, RwLockWriteGuard};
+
 use anyhow::{anyhow, Result};
 use log::{debug, info, warn};
-use std::ops::Deref;
 use serde::{Deserialize, Serialize};
 
 pub mod user {
     use std::collections::HashMap;
     use std::sync::{RwLock, RwLockWriteGuard};
+
     use anyhow::{anyhow, Context, Result};
     use log::{info, trace, warn};
     use once_cell::sync::Lazy;
-    use serde::{Serialize, Deserialize};
+    use serde::{Deserialize, Serialize};
 
     #[derive(Clone, Serialize, Deserialize, Debug)]
     pub struct User {
@@ -22,7 +24,7 @@ pub mod user {
     type Db = HashMap<String, User>;
     static DB: Lazy<RwLock<Db>> = Lazy::new(Default::default); // Map email to user
 
-    pub fn create(email: &str, hash: &str) -> Result<bool> {
+    pub fn create(email: &str, hash: String) -> Result<bool> {
         info!("Creating new user");
 
         let user = User {
@@ -112,11 +114,14 @@ pub mod user {
 pub mod token {
     use std::{collections::HashMap, sync::RwLockWriteGuard};
     use std::sync::RwLock;
+
     use anyhow::{anyhow, bail, Result};
     use log::{info, trace};
     use once_cell::sync::Lazy;
-    use serde::{Serialize, Deserialize};
+    use serde::{Deserialize, Serialize};
+
     use crate::database::user;
+
     extern crate serde_millis;
 
     type Db = HashMap<String, Tokens>;
@@ -181,6 +186,7 @@ pub mod token {
 pub mod email {
     use std::collections::HashMap;
     use std::sync::{RwLock, RwLockWriteGuard};
+
     use anyhow::{anyhow, Result};
     use once_cell::sync::Lazy;
     use serde::{Deserialize, Serialize};

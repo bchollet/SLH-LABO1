@@ -1,10 +1,11 @@
 use axum::async_trait;
 use axum::extract::FromRequestParts;
 use axum_extra::extract::CookieJar;
-use http::request::Parts;
 use http::{header, HeaderMap, StatusCode};
+use http::request::Parts;
 use log::{debug, info, trace};
 use serde::Serialize;
+
 use crate::utils::jwt;
 use crate::utils::jwt::Role;
 
