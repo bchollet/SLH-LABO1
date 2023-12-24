@@ -1,6 +1,7 @@
 use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::CookieJar;
 use log::info;
+use tower_sessions::cookie::SameSite;
 
 use crate::backend::middlewares::RefreshUser;
 use crate::utils::jwt::{Role, set_jwt};
@@ -15,6 +16,9 @@ pub async fn get_access(user: RefreshUser, jar: CookieJar) -> axum::response::Re
 
     // Add JWT to jar
     let cookie = Cookie::build(("access", jwt))
+        .http_only(true) //Avoid reading cookie through Javascript
+        .secure(true) //Https mandatory for this cookie
+        .same_site(SameSite::Strict) //Cookie must be on the same domain (prevent CSRF)
         // TODO : Optionally set cookie's parameters
         ;
     let jar = jar.add(cookie);

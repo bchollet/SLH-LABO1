@@ -1,13 +1,12 @@
-use axum::{BoxError, Router};
 use axum::error_handling::HandleErrorLayer;
 use axum::middleware::from_extractor;
+use axum::{BoxError, Router};
 use axum::routing::{get, post};
 use http::StatusCode;
 use log::{debug, info, trace, warn};
 use tower_http::cors;
 use tower_http::cors::{AllowMethods, CorsLayer};
-use tower_sessions::{MemoryStore, SessionManagerLayer};
-
+use tower_sessions::{SessionManagerLayer, MemoryStore};
 use crate::backend::middlewares::{AccessUser, RefreshUser};
 
 pub fn get_router() -> Router {

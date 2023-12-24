@@ -1,21 +1,21 @@
 use axum::async_trait;
 use axum::extract::FromRequestParts;
 use axum_extra::extract::CookieJar;
-use http::{header, HeaderMap, StatusCode};
 use http::request::Parts;
+use http::{header, HeaderMap, StatusCode};
 use log::{debug, info, trace};
 use serde::Serialize;
-
 use crate::utils::jwt;
 use crate::utils::jwt::Role;
 
 #[derive(Serialize)]
 pub struct RefreshUser {
-    pub(crate) email: String
+    pub(crate) email: String,
 }
+
 #[derive(Serialize, Debug)]
 pub struct AccessUser {
-    pub(crate) email: String
+    pub(crate) email: String,
 }
 
 #[async_trait]
@@ -67,6 +67,8 @@ impl<S> FromRequestParts<S> for AccessUser
 
         // Return validated email
         trace!("Access JWT retrieved, returning email");
+        // let email = String::from("toto@toto.com");
+
         Ok(Self { email })
     }
 }

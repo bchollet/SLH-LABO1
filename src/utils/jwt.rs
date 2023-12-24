@@ -1,10 +1,9 @@
 use std::collections::BTreeMap;
 use std::time::{SystemTime, UNIX_EPOCH};
-
 use anyhow::{anyhow, Result};
 use hmac::{Hmac, Mac};
 use jwt::{SignWithKey, VerifyWithKey};
-use log::info;
+use log::{info, warn};
 use sha2::Sha256;
 
 #[derive(Debug)]
@@ -15,8 +14,8 @@ pub enum Role {
 
 const SECRET_REFRESH: &str = "REFRESH";
 const SECRET_ACCESS: &str = "ACCESS";
-const TIME_LIMIT_REFRESH: u64 = 2 * 60 * 60;
-const TIME_LIMIT_ACCESS: u64 = 5 * 60;
+const TIME_LIMIT_REFRESH: u128 = 2 * 60 * 60 * 1000; // 2 hours in milli
+const TIME_LIMIT_ACCESS: u128 = 5 * 60 * 1000; // 5 min in milli
 
 /// Verify the validity of a JWT accordingly to its role (access or refresh)
 /// Return the email contained in the JWT if its valid
@@ -46,25 +45,29 @@ fn generate(secret : &str, email: &str) -> String {
     let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_ref()).unwrap();
     let mut claims = BTreeMap::new();
     let start = SystemTime::now();
-    let now = start.duration_since(UNIX_EPOCH).unwrap().as_secs().to_string();
-    claims.insert("sub", email);
+    let now = start.duration_since(UNIX_EPOCH).unwrap().as_millis().to_string();
+    claims.insert("email", email);
     claims.insert("iat", &now);
     info!("Token generated successfully");
     claims.sign_with_key(&key).unwrap()
 }
 
-fn validate_and_get_mail(jwt: &str, time_limit_in_sec: u64, secret: &str) -> Result<String> {
+fn validate_and_get_mail(jwt: &str, time_limit: u128, secret: &str) -> Result<String> {
     let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_ref())?;
     let claims: BTreeMap<String, String> = jwt.verify_with_key(&key)?;
     info!("Token has been successfully verified");
     let iat = claims["iat"].parse()?;
-    let email = claims["sub"].clone();
-    if is_expired(iat, time_limit_in_sec) { return Err(anyhow!("Token has expired")); }
+    let email = claims["email"].clone();
+    if is_expired(iat, time_limit) {
+        warn!("Token has expired");
+        return Err(anyhow!("Token has expired"));
+    }
+    info!("Value of token iat: {iat}, email: {email}");
     Ok(String::from(email))
 }
 
-fn is_expired(iat_in_sec: u64, time_limit_in_sec: u64) -> bool {
+fn is_expired(iat: u128, time_limit: u128) -> bool {
     let start = SystemTime::now();
-    let now_in_sec = start.duration_since(UNIX_EPOCH).unwrap().as_secs();
-    iat_in_sec + time_limit_in_sec > now_in_sec
+    let now_in_sec = start.duration_since(UNIX_EPOCH).unwrap().as_millis();
+    iat + time_limit < now_in_sec
 }

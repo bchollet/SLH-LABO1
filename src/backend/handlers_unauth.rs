@@ -101,7 +101,7 @@ fn hash_password(password: &[u8]) -> String {
     let config = Config {
         variant: Variant::Argon2id,
         version: Version::Version13,
-        mem_cost: 4096,
+        mem_cost: 10000,
         time_cost: 10,
         lanes: 4,
         secret: &[],
@@ -115,7 +115,7 @@ fn check_password(user_login: &UserLogin) -> bool {
     const DEFAULT_PASS: &str = "dedce41f-a89c-4f98-8107-ea26bc83752a";
     match get(&user_login.email) {
         None => {
-            verify_encoded(DEFAULT_PASS, DEFAULT_PASS.as_ref());
+            let _ =verify_encoded(DEFAULT_PASS, DEFAULT_PASS.as_ref());
             false
         }
         Some(user) => {
