@@ -5,6 +5,9 @@ use tower_sessions::Session;
 
 use crate::backend::middlewares::AccessUser;
 use crate::backend::models::ChangePassword;
+use crate::database::user;
+use crate::utils::input_validation::{are_passwords_equals, is_password_valid};
+use crate::utils::password::{checked_password, hash_password};
 
 pub async fn change_password (
     session: Session,
@@ -30,5 +33,22 @@ pub async fn change_password (
     }
 
     // TODO : Check the parameters then update the DB with the new password
-    return Err((StatusCode::BAD_REQUEST, "Function 'change_password' not implemented").into());
+    if !are_passwords_equals(&parameters.password, &parameters.password2) {
+        Err((StatusCode::BAD_REQUEST, "Passwords do not match"))?;
+    }
+    if !checked_password(&user.email, &parameters.old_password) {
+        Err((StatusCode::BAD_REQUEST, "Old password is wrong"))?;
+    }
+    match is_password_valid(&parameters.password, 2) {
+        Ok(_) => {
+            let hash = hash_password(parameters.password.as_ref());
+            if user::change_password(&user.email, &hash).unwrap_or(false) {
+                return Ok(StatusCode::NO_CONTENT)
+            }
+        }
+        Err(err) => {
+            return Err((StatusCode::BAD_REQUEST, err))?
+        }
+    }
+    Err((StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong"))?
 }

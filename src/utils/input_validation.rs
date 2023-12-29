@@ -22,6 +22,10 @@ pub fn is_email_valid(email: &str) -> Result<(), String> {
     Err(String::from("Email is invalid"))
 }
 
+pub fn are_passwords_equals(password: &str, password2: &str) -> bool {
+    password == password2
+}
+
 pub fn is_password_valid(password: &str, lower_bound: u8) -> Result<(), String> {
     if password.len() < 8 || password.len() > 64 {
         return Err(String::from("Password either too short or too long"));

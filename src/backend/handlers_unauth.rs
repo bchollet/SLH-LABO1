@@ -1,4 +1,3 @@
-use argon2::{self, Config, Variant, verify_encoded, Version};
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::Json;
@@ -9,7 +8,6 @@ use log::{debug, info, trace, warn};
 use rand::Rng;
 use serde_json::json;
 use time::{Duration, OffsetDateTime};
-use time::ext::NumericalDuration;
 use tower_sessions::Session;
 use uuid::Uuid;
 
@@ -18,10 +16,11 @@ use crate::backend::middlewares::AccessUser;
 use crate::backend::models::{NewUser, Token, UserLogin};
 use crate::database::{token, user};
 use crate::database::email::Email;
-use crate::database::user::{create, get};
+use crate::database::user::{create};
 use crate::email::{get_verification_url, send_mail};
 use crate::utils::input_validation::{is_login_form_valid, is_register_form_valid};
 use crate::utils::jwt::{Role, set_jwt};
+use crate::utils::password::{checked_password, hash_password};
 
 pub async fn register(Json(user): Json<NewUser>) -> axum::response::Result<StatusCode> {
     info!("Register new user");
@@ -75,7 +74,7 @@ pub async fn login(Json(user_login): Json<UserLogin>) -> axum::response::Result<
     // TODO : Generate refresh JWT
     match is_login_form_valid(&user_login.email, &user_login.password) {
         Ok(_) => {
-            if check_password(&user_login) {
+            if checked_password(&user_login.email, &user_login.password) {
                 let jwt = set_jwt(Role::Refresh, &user_login.email);
                 return Ok(Json::from(Token { token: jwt }))
             }
@@ -83,43 +82,6 @@ pub async fn login(Json(user_login): Json<UserLogin>) -> axum::response::Result<
         }
         Err(err) => {
             Err((StatusCode::INTERNAL_SERVER_ERROR, err).into())
-        }
-    }
-}
-fn generate_salt() -> String {
-    let mut rng = rand::thread_rng();
-    let salt: Vec<u8> = (0..16).map(|_| rng.gen::<u8>()).collect();
-
-    // Convert the salt bytes to a hexadecimal string
-    let hex_string: String = salt.iter().map(|byte| format!("{:02x}", byte)).collect();
-
-    hex_string
-}
-
-fn hash_password(password: &[u8]) -> String {
-    let salt = generate_salt();
-    let config = Config {
-        variant: Variant::Argon2id,
-        version: Version::Version13,
-        mem_cost: 10000,
-        time_cost: 10,
-        lanes: 4,
-        secret: &[],
-        ad: &[],
-        hash_length: 32
-    };
-    argon2::hash_encoded(password, salt.as_ref(), &config).unwrap()
-}
-
-fn check_password(user_login: &UserLogin) -> bool {
-    const DEFAULT_PASS: &str = "dedce41f-a89c-4f98-8107-ea26bc83752a";
-    match get(&user_login.email) {
-        None => {
-            let _ =verify_encoded(DEFAULT_PASS, DEFAULT_PASS.as_ref());
-            false
-        }
-        Some(user) => {
-            verify_encoded(&user.hash, user_login.password.as_ref()).unwrap() && user.verified
         }
     }
 }
