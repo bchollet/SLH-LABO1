@@ -6,7 +6,7 @@ use tower_sessions::Session;
 use crate::backend::middlewares::AccessUser;
 use crate::backend::models::ChangePassword;
 use crate::database::user;
-use crate::utils::input_validation::{are_passwords_equals, is_password_valid};
+use crate::utils::input_validation::{are_passwords_equals, is_password_valid, is_short_text_length_valid, PASS_MAX_SIZE, PASS_MIN_SIZE};
 use crate::utils::password::{checked_password, hash_password};
 
 pub async fn change_password (
@@ -32,7 +32,12 @@ pub async fn change_password (
         Err((StatusCode::BAD_REQUEST, "Anti-CSRF tokens don't match"))?;
     }
 
-    // TODO : Check the parameters then update the DB with the new password
+    let inputs = vec![parameters.password.clone(), parameters.password2.clone(), parameters.old_password.clone()];
+    for input in inputs {
+        if is_short_text_length_valid(&input, PASS_MIN_SIZE, PASS_MAX_SIZE).is_err() {
+            Err((StatusCode::BAD_REQUEST, "Invalid password size"))?;
+        }
+    }
     if !are_passwords_equals(&parameters.password, &parameters.password2) {
         Err((StatusCode::BAD_REQUEST, "Passwords do not match"))?;
     }

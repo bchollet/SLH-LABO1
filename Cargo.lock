@@ -913,6 +913,7 @@ dependencies = [
  "log",
  "once_cell",
  "rand",
+ "regex",
  "rust-argon2",
  "serde",
  "serde_json",
