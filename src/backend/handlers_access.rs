@@ -32,6 +32,7 @@ pub async fn change_password (
         Err((StatusCode::BAD_REQUEST, "Anti-CSRF tokens don't match"))?;
     }
 
+    //First, reject incorrect inputs
     let inputs = vec![parameters.password.clone(), parameters.password2.clone(), parameters.old_password.clone()];
     for input in inputs {
         if is_short_text_length_valid(&input, PASS_MIN_SIZE, PASS_MAX_SIZE).is_err() {
@@ -41,6 +42,8 @@ pub async fn change_password (
     if !are_passwords_equals(&parameters.password, &parameters.password2) {
         Err((StatusCode::BAD_REQUEST, "Passwords do not match"))?;
     }
+
+    //Then, check password if inputs are not rejected
     if !checked_password(&user.email, &parameters.old_password) {
         Err((StatusCode::BAD_REQUEST, "Old password is wrong"))?;
     }
